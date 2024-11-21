@@ -1,14 +1,26 @@
-let state = "intro"; // State variable to track the current screen
-let gooseBackground; // Variable to store the goose background
-let textures = []; // Array to store textures from the folder
-let textureNames = ["atmosphere.jpg", "drysoil.jpg", "leaves.jpg"]; // Replace with actual texture file names
-let randomTexture; // Variable to hold a random texture
+let state = "intro"; 
+let gooseBackground, gooseFeetOverlay, geeseFlight; 
+let textures = []; 
+let textureNames = [
+  "ripples.jpg",
+  "drysoil.jpg",
+  "atmosphere.jpg",
+  "leaves.jpg",
+  "moss.jpg",
+  "pebbles.jpg",
+  "shadows.jpg",
+  "clouds2.jpg",
+  "lens1.jpg"
+];
+let randomTexture; 
+let livesAgo; 
+let fadeAmount = 0; // For gradual fade-in
 
 function preload() {
-  // Load goose background
   gooseBackground = loadImage("goose.jpeg");
+  gooseFeetOverlay = loadImage("goosefeet.png"); 
+  geeseFlight = loadImage("geeseflight2.png");
 
-  // Load textures from the textures folder
   for (let i = 0; i < textureNames.length; i++) {
     textures[i] = loadImage("textures/" + textureNames[i]);
   }
@@ -17,86 +29,108 @@ function preload() {
 function setup() {
   createCanvas(windowWidth, windowHeight);
   textAlign(CENTER);
-  imageMode(CENTER);
   noStroke();
-
-  // Pick a random texture for the next screen
-  randomTexture = random(textures);
 }
 
 function draw() {
   if (state === "intro") {
-    // Intro page: black background with text
     background(0);
-    textSize(20);
-    fill(255);
-    text("glimpse into your past life as a goose", width / 2, height / 2 - 20);
-    textSize(18);
-    text("click to continue", width / 2, height / 2 + 40);
+    textSize(40);
+    textFont("Gaegu");
+    fill(100);
+    drawImageAtBottom(geeseFlight, 1);
+    text("glimpse into your past life", width / 2, height / 2 - 45);
+    text("as a goose", width / 2, height / 2);
+    textSize(14);
+    text("click to continue", width / 2, height - 100);
   } else if (state === "goose") {
-    // Goose page with the goose background and "Ready?" text
     drawCenteredImage(gooseBackground);
     textSize(36);
     fill(255);
     text("ready?", width / 2, height / 2);
   } else if (state === "textures") {
-    // Textures page with random texture and buttons
-    drawCenteredImage(randomTexture);
-    drawButton("Back to Intro", 50, height - 100, () => state = "intro");
-    drawButton("Credits", width - 150, height - 100, () => state = "credits");
-  } else if (state === "credits") {
-    // Credits page with a blank background and credits text
-    background(255);
+    background(0); // Ensure the background is redrawn
+    tint(255, fadeAmount); // Apply fading effect to images
+    drawCenteredImage(randomTexture); // Draw the random texture
+    drawImageAtBottom(gooseFeetOverlay, 0.4);
+
+    noTint(); // Reset tint for text and other elements
     textSize(24);
-    fill(0);
-    text("Credits: Textures from TextureLabs", width / 2, height / 2);
+    fill(255, fadeAmount); // Apply fading effect to text
+
+    if (randomTexture === textures[textureNames.indexOf("lens1.jpg")]) {
+      text("you have never been a goose in a past life.", width / 2, height / 2);
+      text("maybe next time.", width / 2, height / 2 + 30);
+    } else {
+      text("this was your last memory as a goose", width / 2, height / 2);
+      text(`you were a goose ${livesAgo} lives ago`, width / 2, height / 2 + 30);
+    }
+
+    drawButton("back to intro", 50, height - 100, () => state = "intro");
+    drawButton("save", width - 150, height - 100, saveGooseLife);
+
+    // Increment fadeAmount to create the fade-in effect
+    if (fadeAmount < 255) {
+      fadeAmount += 3; // Adjust the increment speed for smoother transitions
+    }
   }
 }
 
-function drawCenteredImage(img) {
+function drawImageAtBottom(img, scaleFactor) {
+  let scaledWidth = img.width * scaleFactor;
+  let scaledHeight = img.height * scaleFactor;
+
+  let x = (width - scaledWidth) / 2;
+  let y = height - scaledHeight;
+
+  image(img, x, y, scaledWidth, scaledHeight);
+}
+
+function drawCenteredImage(img, scaleFactor = 1) {
   let imgAspect = img.width / img.height;
   let canvasAspect = width / height;
 
   let drawWidth, drawHeight;
 
   if (imgAspect > canvasAspect) {
-    drawWidth = width;
-    drawHeight = width / imgAspect;
+    drawWidth = width * scaleFactor * 5;
+    drawHeight = (width * scaleFactor * 5) / imgAspect;
   } else {
-    drawHeight = height;
-    drawWidth = height * imgAspect;
+    drawHeight = height * scaleFactor * 5;
+    drawWidth = (height * scaleFactor * 5) * imgAspect;
   }
 
-  image(img, (width - drawWidth) / 0.5, (height - drawHeight) / 1, drawWidth, drawHeight);
+  image(img, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
 }
 
 function drawButton(label, x, y, onClick) {
-  // Button properties
   let btnWidth = 120;
   let btnHeight = 40;
 
-  // Button background
   fill(0, 0, 0);
   rect(x, y, btnWidth, btnHeight, 5);
 
-  // Button text
   fill(255);
   textSize(16);
   textAlign(CENTER, CENTER);
   text(label, x + btnWidth / 2, y + btnHeight / 2);
 
-  // Check if mouse is pressed on the button
   if (mouseIsPressed && mouseX > x && mouseX < x + btnWidth && mouseY > y && mouseY < y + btnHeight) {
     onClick();
   }
 }
 
+function saveGooseLife() {
+  saveCanvas('gooselife', 'jpg');
+}
+
 function mousePressed() {
   if (state === "intro") {
-    // Advance to the goose page
     state = "goose";
   } else if (state === "goose") {
-    // Advance to the textures page
+    randomTexture = random(textures); 
+    livesAgo = Math.floor(random(2, 14)); 
+    fadeAmount = 0; // Reset fadeAmount for new transition
     state = "textures";
   }
 }
